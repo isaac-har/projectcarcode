@@ -3,7 +3,7 @@
 uint16_t sensorValues[8] = {};
 uint16_t summed_values[8] = {};
 int16_t averagedSensorValues[8] = {};
-int unweightedSensorSum;
+int unweightedSensorSum = 0;
 int number_samples = 5;
 int weightedError = 0;
 int sensorSum = 0;
