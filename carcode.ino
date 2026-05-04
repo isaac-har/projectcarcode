@@ -54,7 +54,7 @@ void loop() {
   for (int i = 0; i < 8; i++) {
     sensorSum += averagedSensorValues[i];
   }
-  weightedError = sensorSum / unweightedSensorSum;
+  weightedError = (sensorSum * 1000L) / unweightedSensorSum;
   Serial.println(weightedError);
 
   for (unsigned char i = 0; i < 8; i++) {
