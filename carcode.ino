@@ -46,6 +46,7 @@ void setup() {
   digitalWrite(left_nslp_pin,HIGH);
   digitalWrite(right_nslp_pin,HIGH);
 
+   ChangeWheelSpeeds(left_pwm_pin, baseSpeed, right_pwm_pin, baseSpeed);
   resetEncoderCount_left();
   resetEncoderCount_right();
 }
@@ -126,7 +127,7 @@ void loop() {
   weightedError = 0;
 
  
-  delay(1000);
+  delay(30);
   
 }
 
