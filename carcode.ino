@@ -9,6 +9,17 @@ int weightedError = 0;
 int sensorSum = 0;
 
 
+//PD controller
+double baseSpeed = 50;
+int maxError = 2100;
+double errorMargin = 0.5;
+
+double kp = (baseSpeed * errorMargin) / maxError;
+double kd = kp * 5;
+
+double correction = 0;
+double previousError = 0;
+
 void setup() {
   ECE3_Init();
   Serial.begin(9600);  // set the data rate in bits per second for serial data transmission
@@ -30,14 +41,14 @@ void loop() {
   }
 
   // Print average values (average value = summed_values / number_samples
-  Serial.println("Average sensor values: ");
+  // Serial.println("Average sensor values: ");
   for (unsigned char i = 0; i < 8; i++) {
     averagedSensorValues[i] = summed_values[i] / number_samples;
-    Serial.print(averagedSensorValues[i]);
-    Serial.print('\t');  // tab to format the raw data into columns in the Serial monitor
+    // Serial.print(averagedSensorValues[i]);
+    // Serial.print('\t');  // tab to format the raw data into columns in the Serial monitor
     unweightedSensorSum += averagedSensorValues[i];
   }
-  Serial.println();
+  // Serial.println();
 
 
 
@@ -57,14 +68,21 @@ void loop() {
   weightedError = (sensorSum * 1000L) / unweightedSensorSum;
   Serial.println(weightedError);
 
+  correction = kp * weightedError + kd * (weightedError - previousError);
+
+
   for (unsigned char i = 0; i < 8; i++) {
     summed_values[i] = 0;
     sensorValues[i] = 0;
     averagedSensorValues[i] = 0;
   }
+
+  previousError = weightedError;
   unweightedSensorSum = 0;
   sensorSum = 0;
   weightedError = 0;
+
+ 
   delay(1000);
   
 }
