@@ -18,8 +18,8 @@ int sensorSum = 0;
 
 float baseSpeed = 100;
 //PD controller
-float kp = 0.01;
-float kd = kp ;
+float kp = 0.025;
+float kd = 0.25;
 
 float correction = 0;
 float previousError = 0;
@@ -42,7 +42,7 @@ void setup() {
   digitalWrite(left_nslp_pin,HIGH);
   digitalWrite(right_nslp_pin,HIGH);
 
-   analogWrite(left_pwm_pin,baseSpeed);  
+  analogWrite(left_pwm_pin,baseSpeed);  
   analogWrite(right_pwm_pin,baseSpeed);  
   resetEncoderCount_left();
   resetEncoderCount_right();
@@ -73,8 +73,6 @@ void loop() {
   }
   // Serial.println();
 
-
-
   averagedSensorValues[0] = averagedSensorValues[0] * -15;
   averagedSensorValues[1] = averagedSensorValues[1] * -14;
   averagedSensorValues[2] = averagedSensorValues[2] * -12;
@@ -88,8 +86,11 @@ void loop() {
   for (int i = 0; i < 8; i++) {
     sensorSum += averagedSensorValues[i];
   }
-  weightedError = (sensorSum * 1000L) / (2 * unweightedSensorSum);
-  Serial.println(weightedError);
+  if (unweightedSensorSum == 0) {
+    weightedError = previousError; // Keep turning the same way if it loses the line
+  } else {
+    weightedError = (sensorSum * 1000L) / (2 * unweightedSensorSum);
+  }
 
   correction = kp * weightedError + kd * (weightedError - previousError);
 
