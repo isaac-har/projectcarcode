@@ -1,100 +1,125 @@
 #include <ECE3.h>
 
+const int left_nslp_pin = 31;   // nslp HIGH ==> awake & ready for PWM
+const int right_nslp_pin = 11;  // nslp HIGH ==> awake & ready for PWM
+const int left_dir_pin = 29;
+const int right_dir_pin = 30;
+const int left_pwm_pin = 40;
+const int right_pwm_pin = 39;
 
-const int left_nslp_pin=31; // nslp HIGH ==> awake & ready for PWM
-const int right_nslp_pin=11; // nslp HIGH ==> awake & ready for PWM
-const int left_dir_pin=29;
-const int right_dir_pin=30;
-const int left_pwm_pin=40;
-const int right_pwm_pin=39;
+uint16_t sensorValues[8];
+float calibratedSensorValues[8];
+float summed_values[8];
 
-uint16_t sensorValues[8] = {};
-uint16_t summed_values[8] = {};
-int16_t averagedSensorValues[8] = {};
-int unweightedSensorSum = 0;
-int number_samples = 5;
-int weightedError = 0;
-int sensorSum = 0;
+float weightedError = 0;
+float sensorSum = 0;
 
-float baseSpeed = 100;
-//PD controller
-float kp = 0.025;
-float kd = 0.25;
+float baseSpeed;
+float kp;
+float kd;
 
 float correction = 0;
 float previousError = 0;
 
-int leftWheelSpeed;
-int rightWheelSpeed;
+float leftWheelSpeed;
+float rightWheelSpeed;
+
+const float MAX_SENSOR_VALUE = 49000.0;
+const int weights[8] = { -15, -14, -12, -8, 8, 12, 14, 15 };
+
+int crossPieceCount = 0;
+
+void turnAround() {
+
+  //Stop briefly
+  analogWrite(left_pwm_pin, 0);
+  analogWrite(right_pwm_pin, 0);
+  delay(50);
+
+  //Reverse left motor spin direction, turn for 400 ms
+  digitalWrite(left_dir_pin, HIGH);
+  digitalWrite(right_dir_pin, LOW);
+
+  analogWrite(left_pwm_pin, 240);
+  analogWrite(right_pwm_pin, 240);
+
+  delay(285);
+
+  //Stop briefly again
+  analogWrite(left_pwm_pin, 0);
+  analogWrite(right_pwm_pin, 0);
+  //Make left motor forward again
+  digitalWrite(left_dir_pin, LOW);
+
+  delay(50);
+
+  //Drive forward again off the cross piece
+  analogWrite(left_pwm_pin, 200);
+  analogWrite(right_pwm_pin, 200);
+
+  crossPieceCount++;
+  delay(300);
+  
+}
 
 void setup() {
   ECE3_Init();
   Serial.begin(9600);  // set the data rate in bits per second for serial data transmission
-  delay(1000);
 
-  pinMode(left_nslp_pin,OUTPUT);
-  pinMode(left_dir_pin,OUTPUT);
-  pinMode(left_pwm_pin,OUTPUT);
-  pinMode(right_nslp_pin,OUTPUT);
-  pinMode(right_dir_pin,OUTPUT);
-  pinMode(right_pwm_pin,OUTPUT);
 
-  digitalWrite(left_nslp_pin,HIGH);
-  digitalWrite(right_nslp_pin,HIGH);
+  pinMode(left_nslp_pin, OUTPUT);
+  pinMode(left_dir_pin, OUTPUT);
+  pinMode(left_pwm_pin, OUTPUT);
+  pinMode(right_nslp_pin, OUTPUT);
+  pinMode(right_dir_pin, OUTPUT);
+  pinMode(right_pwm_pin, OUTPUT);
 
-  analogWrite(left_pwm_pin,baseSpeed);  
-  analogWrite(right_pwm_pin,baseSpeed);  
-  resetEncoderCount_left();
-  resetEncoderCount_right();
+  digitalWrite(left_nslp_pin, HIGH);
+  digitalWrite(right_nslp_pin, HIGH);
+
+  digitalWrite(left_dir_pin, LOW);  // Set car direction to forward
+  digitalWrite(right_dir_pin, LOW);
+
+  delay(2000);
 }
 
 void loop() {
-  digitalWrite(left_dir_pin,LOW);  // Set car direction to forward
-  digitalWrite(right_dir_pin,LOW);
 
+  ECE3_read_IR(sensorValues);
 
-  for (int j = 0; j < number_samples; j++) {
-    // Read raw sensor values
-    ECE3_read_IR(sensorValues);
+  //Calibrating each sensor reading
+  calibratedSensorValues[0] = ((sensorValues[0] - 668.0) * 1000L) / 926.0;
+  calibratedSensorValues[1] = ((sensorValues[1] - 574.0) * 1000L) / 1091.0;
+  calibratedSensorValues[2] = ((sensorValues[2] - 551.0) * 1000L) / 972.0;
+  calibratedSensorValues[3] = ((sensorValues[3] - 551.0) * 1000L) / 948.0;
+  calibratedSensorValues[4] = ((sensorValues[4] - 574.0) * 1000L) / 925.0;
+  calibratedSensorValues[5] = ((sensorValues[5] - 551.0) * 1000L) / 938.0;
+  calibratedSensorValues[6] = ((sensorValues[6] - 505.0) * 1000L) / 971.0;
+  calibratedSensorValues[7] = ((sensorValues[7] - 611.0) * 1000L) / 1055.0;
 
-    // Add the current sensor values using a for loop
-    for (unsigned char i = 0; i < 8; i++) {
-      summed_values[i] += sensorValues[i];
-    }
-  }
-
-  // Print average values (average value = summed_values / number_samples
-  // Serial.println("Average sensor values: ");
-  for (unsigned char i = 0; i < 8; i++) {
-    averagedSensorValues[i] = summed_values[i] / number_samples;
-    // Serial.print(averagedSensorValues[i]);
-    // Serial.print('\t');  // tab to format the raw data into columns in the Serial monitor
-    unweightedSensorSum += averagedSensorValues[i];
-  }
-  // Serial.println();
-
-  averagedSensorValues[0] = averagedSensorValues[0] * -15;
-  averagedSensorValues[1] = averagedSensorValues[1] * -14;
-  averagedSensorValues[2] = averagedSensorValues[2] * -12;
-  averagedSensorValues[3] = averagedSensorValues[3] * -8;
-  averagedSensorValues[4] = averagedSensorValues[4] * 8;
-  averagedSensorValues[5] = averagedSensorValues[5] * 12;
-  averagedSensorValues[6] = averagedSensorValues[6] * 14;
-  averagedSensorValues[7] = averagedSensorValues[7] * 15;
-
-
+  //Weighting the sensor values
   for (int i = 0; i < 8; i++) {
-    sensorSum += averagedSensorValues[i];
+    calibratedSensorValues[i] *= weights[i];
+    sensorSum += calibratedSensorValues[i];
   }
-  if (unweightedSensorSum == 0) {
-    weightedError = previousError; // Keep turning the same way if it loses the line
+
+  //Normalizing based on the highest possible sensor reading
+  weightedError = sensorSum / MAX_SENSOR_VALUE;
+
+  //Slow down if error is large i.e. on a turn
+  if (abs(weightedError) < 0.4) {
+    baseSpeed = 195;
+    kp = 132;
+    kd = 1135;
   } else {
-    weightedError = (sensorSum * 1000L) / (2 * unweightedSensorSum);
+    baseSpeed = 130;
+    kp = 62;
+    kd = 620;
   }
 
-  correction = kp * weightedError + kd * (weightedError - previousError);
+  //Use PD values to determine how much to change wheel speed
+  correction = (kp * weightedError) + (kd * (weightedError - previousError));
 
-  
   leftWheelSpeed = baseSpeed - correction;
   if (leftWheelSpeed > 255) {
     leftWheelSpeed = 255;
@@ -102,7 +127,7 @@ void loop() {
   if (leftWheelSpeed < 0) {
     leftWheelSpeed = 0;
   }
-  
+
   rightWheelSpeed = baseSpeed + correction;
   if (rightWheelSpeed > 255) {
     rightWheelSpeed = 255;
@@ -111,20 +136,39 @@ void loop() {
     rightWheelSpeed = 0;
   }
 
-  analogWrite(left_pwm_pin,leftWheelSpeed);  
-  analogWrite(right_pwm_pin,rightWheelSpeed);  
+  analogWrite(left_pwm_pin, leftWheelSpeed);
+  analogWrite(right_pwm_pin, rightWheelSpeed);
 
-  for (unsigned char i = 0; i < 8; i++) {
-    summed_values[i] = 0;
-    sensorValues[i] = 0;
-    averagedSensorValues[i] = 0;
+  if (abs(weightedError - 0.0472) < 0.001 && abs(previousError - 0.0472) < 0.001) {
+    crossPieceCount++;
   }
 
+  if (crossPieceCount == 1) {
+    turnAround();
+  }
+  if (crossPieceCount > 3) {
+    analogWrite(left_pwm_pin, 0);
+    analogWrite(right_pwm_pin, 0);
+
+    delay(999999);
+  }
+
+
+  // Serial.print("WE: ");
+  // Serial.print(weightedError, 6);
+  // Serial.print("\tPE: ");
+  // Serial.print(previousError, 6);
+  // Serial.print("\tCorr: ");
+  // Serial.print(correction);
+  // Serial.print("\tL: ");
+  // Serial.print(leftWheelSpeed);
+  // Serial.print("\tR: ");
+  // Serial.println(rightWheelSpeed);
+  // delay(100);
+
+
+
   previousError = weightedError;
-  unweightedSensorSum = 0;
   sensorSum = 0;
   weightedError = 0;
-  
 }
-
-
