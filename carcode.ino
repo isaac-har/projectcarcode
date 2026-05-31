@@ -34,7 +34,7 @@ void turnAround() {
   //Stop briefly
   analogWrite(left_pwm_pin, 0);
   analogWrite(right_pwm_pin, 0);
-  delay(50);
+  delay(15);
 
   //Reverse left motor spin direction, turn for 400 ms
   digitalWrite(left_dir_pin, HIGH);
@@ -43,7 +43,7 @@ void turnAround() {
   analogWrite(left_pwm_pin, 240);
   analogWrite(right_pwm_pin, 240);
 
-  delay(285);
+  delay(246);
 
   //Stop briefly again
   analogWrite(left_pwm_pin, 0);
@@ -51,14 +51,14 @@ void turnAround() {
   //Make left motor forward again
   digitalWrite(left_dir_pin, LOW);
 
-  delay(50);
+  delay(15);
 
   //Drive forward again off the cross piece
-  analogWrite(left_pwm_pin, 200);
-  analogWrite(right_pwm_pin, 200);
+  analogWrite(left_pwm_pin, 240);
+  analogWrite(right_pwm_pin, 240);
 
   crossPieceCount++;
-  delay(300);
+  delay(243);
   
 }
 
@@ -108,13 +108,13 @@ void loop() {
 
   //Slow down if error is large i.e. on a turn
   if (abs(weightedError) < 0.4) {
-    baseSpeed = 195;
-    kp = 132;
+    baseSpeed = 230;
+    kp = 134;
     kd = 1135;
   } else {
-    baseSpeed = 130;
-    kp = 62;
-    kd = 620;
+    baseSpeed = 145;
+    kp = 76;
+    kd = 622;
   }
 
   //Use PD values to determine how much to change wheel speed
@@ -146,7 +146,7 @@ void loop() {
   if (crossPieceCount == 1) {
     turnAround();
   }
-  if (crossPieceCount > 3) {
+  if (crossPieceCount >= 3) {
     analogWrite(left_pwm_pin, 0);
     analogWrite(right_pwm_pin, 0);
 
