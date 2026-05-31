@@ -108,7 +108,7 @@ void loop() {
 
   //Slow down if error is large i.e. on a turn
   if (abs(weightedError) < 0.45) {
-    baseSpeed = 230;
+    baseSpeed = 210;
     kp = 134;
     kd = 1135;
   } else {
@@ -122,7 +122,7 @@ void loop() {
 
   leftWheelSpeed = baseSpeed - correction;
   if (leftWheelSpeed > 255) {
-    leftWheelSpeed = 255;
+    leftWheelSpeed = 250;
   }
   if (leftWheelSpeed < 0) {
     leftWheelSpeed = 0;
@@ -130,7 +130,7 @@ void loop() {
 
   rightWheelSpeed = baseSpeed + correction;
   if (rightWheelSpeed > 255) {
-    rightWheelSpeed = 255;
+    rightWheelSpeed = 250;
   }
   if (rightWheelSpeed < 0) {
     rightWheelSpeed = 0;
