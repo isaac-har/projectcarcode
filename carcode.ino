@@ -107,7 +107,7 @@ void loop() {
   weightedError = sensorSum / MAX_SENSOR_VALUE;
 
   //Slow down if error is large i.e. on a turn
-  if (abs(weightedError) < 0.4) {
+  if (abs(weightedError) < 0.45) {
     baseSpeed = 230;
     kp = 134;
     kd = 1135;
